@@ -41,7 +41,7 @@ class QuotesSpider(scrapy.Spider):
 
 # def parse_question(self, response):
 #     answers = response.css("div.answer")
-#     if answers: # Only process if answers exist
+#     if answers: 
 #         item = FirstProjectItem()
 
 #         # Question details
@@ -53,34 +53,35 @@ class QuotesSpider(scrapy.Spider):
 #         question_author = response.css("div.post-layout--right div.user-info")
 #         item["asked_by"] = {
 #             "name": question_author.css("div.user-details a::text").get(),
-#             "reputation": question_author.css("span.reputation-score::text").get(default="0").replace(",", ""),
+#             "asked_time": response.css("time::attr(datetime)").get(),
+#             "reputation": question_author.css("div.-flair span.reputation-score::text").get(),
 #             "gold_badges": question_author.css("span.badge1 + span::text").get(default="0"),
 #             "silver_badges": question_author.css("span.badge2 + span::text").get(default="0"),
 #             "bronze_badges": question_author.css("span.badge3 + span::text").get(default="0"),
-#             "asked_time": response.css("time::attr(datetime)").get(),
 #         }
 
-#         # Accepted answer
-#         accepted_answer = response.css("div.answer.accepted")
-#         accepted_answer_content = accepted_answer.css("div.s-prose p::text").getall()
-#         item["accepted_answer"] = " ".join(accepted_answer_content).strip() if accepted_answer_content else None
-
 #         # Extract all answer details
-#         answer_details = []
-#         for answer in answers:
+#         all_answers = []
+#         for answer in response.css("div.answer"):
+#             is_accepted = bool(answer.css("div.accepted-answer")) # True if the answer is accepted
 #             user_info = answer.css("div.user-info")
-#             answer_detail = {
-#                 "name": user_info.css("div.user-details a::text").get(),
-#                 "answered_time": answer.css("time::attr(datetime)").get(),
-#                 "reputation": user_info.css("span.reputation-score::text").get(default="0").replace(",", ""),
-#                 "gold_badges": user_info.css("span.badge1 + span::text").get(default="0"),
-#                 "silver_badges": user_info.css("span.badge2 + span::text").get(default="0"),
-#                 "bronze_badges": user_info.css("span.badge3 + span::text").get(default="0"),
-#                 "content": " ".join(answer.css("div.s-prose p::text").getall()).strip(),
-#                 "is_accepted": bool(answer.css("div.accepted")), # True if this is the accepted answer
+#             answer_content = " ".join(answer.css("div.s-prose p::text").getall()).strip()
+#             answer_details = {
+#                 "content": answer_content,
+#                 "is_accepted": is_accepted,
+#                 "answered_by": {
+#                     "name": user_info.css("div.user-details a::text").get(),
+#                     "answered_time": answer.css("time::attr(datetime)").get(),
+#                     "reputation": user_info.css("div.-flair span.reputation-score::text").get(),
+#                     "gold_badges": user_info.css("span.badge1 + span::text").get(default="0"),
+#                     "silver_badges": user_info.css("span.badge2 + span::text").get(default="0"),
+#                     "bronze_badges": user_info.css("span.badge3 + span::text").get(default="0"),
+#                 }
 #             }
-#             answer_details.append(answer_detail)
+#             all_answers.append(answer_details)
 
-#         item["answer_details"] = answer_details
+#         # Add all answers to the item
+#         item["answers"] = all_answers
+
 #         yield item
 
