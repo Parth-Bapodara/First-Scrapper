@@ -1,7 +1,8 @@
 from pathlib import Path
 import scrapy
 from ..items import FirstProjectItem
-import logging
+import logging, smtplib
+from email.message import EmailMessage
 
 logger = logging.getLogger(__name__)
 
@@ -14,9 +15,6 @@ class StackOverSpider(scrapy.Spider):
         for question in response.css("div.s-post-summary"):
             question_link = response.urljoin(question.css("h3 a::attr(href)").get())
             yield response.follow(question_link, callback=self.parse_question)
-        page = response.url.split("/")[-2]
-        filename = f"quotes-{page}.html"
-        Path(filename).write_bytes(response.body)
 
     def parse_question(self, response):
         answers = response.css("div.answer")
@@ -28,9 +26,21 @@ class StackOverSpider(scrapy.Spider):
             item["tags"]  = response.css("div.post-taglist a::text").getall()
             item["total_answers"] = len(answers) 
 
-            stats = response.css("div.s-post-summary--stats div.s-post-summary--stats-item")
-            item["votes"] = stats[0].css("span::text").get(default="0").strip()
-            item["views"] = stats[2].css("span::text").get(default="0").strip()
+            stats = response.css("div.s-post-summary--stats")
+            
+            votes = None
+            views = None
+
+            for stat in stats:
+                label = stat.css("div::attr(title)").extract()
+                value = stat.css("span.s-post-summary--stats-item-number::text").extract(default="0")
+                if "Score" in label:
+                    votes = value
+                elif "views" in label:
+                    views = value
+
+            item["votes"] = votes 
+            item["views"] = views 
 
             question_author = response.css("div.post-layout--right div.user-info")
             item["asked_by"] = {
@@ -71,6 +81,11 @@ class StackOverSpider(scrapy.Spider):
 
             yield item
 
+    def send_mail():
+
+        msg = EmailMessage()
+        msg['From']
+        
             # accepted_answer = response.css("div.answer.accepted-answer div.s-prose p::text").getall()
             # item["accepted_answer"] = " ".join(accepted_answer).strip() if accepted_answer else None
             

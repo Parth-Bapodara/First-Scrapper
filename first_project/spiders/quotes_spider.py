@@ -39,49 +39,70 @@ class QuotesSpider(scrapy.Spider):
         # self.log(f"Saved file {filename}")
 
 
-# def parse_question(self, response):
-#     answers = response.css("div.answer")
-#     if answers: 
+
+
+
+# stats = response.css("div.s-post-summary--stats-item")
+# votes = views = "0"
+
+# for stat in stats:
+#     label = stat.css("span::text").get(default="").strip().lower()
+#     if "vote" in label: # Check if the label mentions votes
+#         votes = stat.css("div.s-post-summary--stats-item-number::text").get(default="0").strip()
+#     elif "view" in label: # Check if the label mentions views
+#         views = stat.css("div.s-post-summary--stats-item-number::text").get(default="0").strip()
+
+# item["votes"] = votes
+# item["views"] = views
+
+
+# import scrapy
+# from ..items import FirstProjectItem
+
+# class StackOverSpider(scrapy.Spider):
+#     name = "stack"
+#     allowed_domains = ["stackoverflow.com"]
+#     start_urls = ['https://stackoverflow.com/questions?tab=Active']
+
+#     def parse(self, response):
+#         for question in response.css("div.s-post-summary"):
+#             question_link = response.urljoin(question.css("h3 a::attr(href)").get())
+#             yield response.follow(question_link, callback=self.parse_question)
+
+# #     mport scrapy
+# from ..items import FirstProjectItem
+
+# class StackOverSpider(scrapy.Spider):
+#     name = "stack"
+#     allowed_domains = ["stackoverflow.com"]
+#     start_urls = ['https://stackoverflow.com/questions?tab=Active']
+
+#     def parse(self, response):
+#         for question in response.css("div.s-post-summary"):
+#             question_link = response.urljoin(question.css("h3 a::attr(href)").get())
+#             yield response.follow(question_link, callback=self.parse_question)
+
+#     def parse_question(self, response):
+#         # Initialize the item
 #         item = FirstProjectItem()
 
-#         # Question details
+#         # Extracting votes and views using a loop
+#         stats = response.css("div.s-post-summary--stats div.s-post-summary--stats-item")
+#         votes, views = None, None
+
+#         for stat in stats:
+#             label = stat.css("span::attr(title)").get() # Example: "votes", "views"
+#             value = stat.css("span.s-post-summary--stats-item-number::text").extract_first(default="0").strip()
+#             if "vote" in label.lower():
+#                 votes = value
+#             elif "view" in label.lower():
+#                 views = value
+
+#         # Storing in the item
+#         item["votes"] = votes or "0" # Default to "0" if not found
+#         item["views"] = views or "0"
+
+#         # Extracting question details
 #         item["title"] = response.css("h1 a::text").get()
 #         item["link"] = response.url
 #         item["tags"] = response.css("div.post-taglist a::text").getall()
-
-#         # Question author (asked by)
-#         question_author = response.css("div.post-layout--right div.user-info")
-#         item["asked_by"] = {
-#             "name": question_author.css("div.user-details a::text").get(),
-#             "asked_time": response.css("time::attr(datetime)").get(),
-#             "reputation": question_author.css("div.-flair span.reputation-score::text").get(),
-#             "gold_badges": question_author.css("span.badge1 + span::text").get(default="0"),
-#             "silver_badges": question_author.css("span.badge2 + span::text").get(default="0"),
-#             "bronze_badges": question_author.css("span.badge3 + span::text").get(default="0"),
-#         }
-
-#         # Extract all answer details
-#         all_answers = []
-#         for answer in response.css("div.answer"):
-#             is_accepted = bool(answer.css("div.accepted-answer")) # True if the answer is accepted
-#             user_info = answer.css("div.user-info")
-#             answer_content = " ".join(answer.css("div.s-prose p::text").getall()).strip()
-#             answer_details = {
-#                 "content": answer_content,
-#                 "is_accepted": is_accepted,
-#                 "answered_by": {
-#                     "name": user_info.css("div.user-details a::text").get(),
-#                     "answered_time": answer.css("time::attr(datetime)").get(),
-#                     "reputation": user_info.css("div.-flair span.reputation-score::text").get(),
-#                     "gold_badges": user_info.css("span.badge1 + span::text").get(default="0"),
-#                     "silver_badges": user_info.css("span.badge2 + span::text").get(default="0"),
-#                     "bronze_badges": user_info.css("span.badge3 + span::text").get(default="0"),
-#                 }
-#             }
-#             all_answers.append(answer_details)
-
-#         # Add all answers to the item
-#         item["answers"] = all_answers
-
-#         yield item
-
