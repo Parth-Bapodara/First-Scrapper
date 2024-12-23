@@ -1,9 +1,14 @@
+# import sys,os
+# sys.path.append(os.path.abspath('......./Config.config'))
 from pathlib import Path
-import scrapy
+import scrapy,os
 from ..items import FirstProjectItem
 import logging, smtplib
 from email.message import EmailMessage
+from dotenv import load_dotenv
+#from Config.config import settigs
 
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 class StackOverSpider(scrapy.Spider):
@@ -26,21 +31,27 @@ class StackOverSpider(scrapy.Spider):
             item["tags"]  = response.css("div.post-taglist a::text").getall()
             item["total_answers"] = len(answers) 
 
-            stats = response.css("div.s-post-summary--stats")
-            
-            votes = None
-            views = None
+            # stats = response.css("div.s-post-summary--stats-item")
 
-            for stat in stats:
-                label = stat.css("div::attr(title)").extract()
-                value = stat.css("span.s-post-summary--stats-item-number::text").extract(default="0")
+            demo_details = []
+            for stat in response.css("div.s-post-summary--stats-item"):
+                label = stat.css("div::attr(title)").get().lower()
+                value = stat.css("span.s-post-summary--stats-item-number::text").extract()
                 if "Score" in label:
                     votes = value
-                elif "views" in label:
+                elif "view" in label:
                     views = value
+                elif "accepted" in label:
+                    has_accepted = True
 
-            item["votes"] = votes 
-            item["views"] = views 
+                demo_det = {
+                    "votes": votes,
+                    "views": views,
+                    "is_accepted": has_accepted
+                }
+                demo_details.append(demo_det)
+            
+            item["details"] = demo_details
 
             question_author = response.css("div.post-layout--right div.user-info")
             item["asked_by"] = {
@@ -56,8 +67,11 @@ class StackOverSpider(scrapy.Spider):
             answer_detail = []
             for answer in response.css("div.answer"):
                 is_accepted = bool(answer.css("div.accepted-answer"))
+
+                answer_parts = answer.css("div.s-prose p::text, div.s-prose pre::text, div.s-prose code::text, div.s-prose a::text").getall()
+                answer_content = "\n".join([part.strip() for part in answer_parts if part.strip()])
+
                 user_info = answer.css("div.user-info")
-                answer_content = " ".join(answer.css("div.s-prose p::text").getall()).strip()
                 answer_details = {
                     "content": answer_content,
                     "is_accepted": is_accepted,
@@ -84,8 +98,30 @@ class StackOverSpider(scrapy.Spider):
     def send_mail():
 
         msg = EmailMessage()
-        msg['From']
-        
+        msg['From'] = os.getenv("MAIL_FROM")
+        msg['To'] = "parth.bapodara@mindinventory.com"
+        msg["Subject"] = "Scrapper Output File"
+        msg.set_content("Your Requested Output file for Stackoverflow using Scrapy.")
+        with open("stack_demo.json", 'r') as f:
+            data = f.read()
+        msg.add_attachment(data,filename = "stack_demo.json")
+        #msg.set_content()
+
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.ehlo()
+        server.login(os.getenv("MAIL_FROM"), os.getenv("MAIL_PASSWORD"))
+        server.send_message(msg)
+        server.quit()
+
+    #send_mail()
+
+
+
+# process = CrawlerProcess()
+# process.crawl(StackOverSpider)
+# process.start()
+
             # accepted_answer = response.css("div.answer.accepted-answer div.s-prose p::text").getall()
             # item["accepted_answer"] = " ".join(accepted_answer).strip() if accepted_answer else None
             

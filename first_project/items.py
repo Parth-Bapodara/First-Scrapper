@@ -15,6 +15,7 @@ class FirstProjectItem(scrapy.Item):
     votes = scrapy.Field()
     total_answers = scrapy.Field()
     asked_by = scrapy.Field()
+    details = scrapy.Field()
     # answered_by = scrapy.Field()
     # answered_by_other = scrapy.Field()
     # accepted_answer = scrapy.Field()
