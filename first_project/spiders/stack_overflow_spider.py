@@ -12,6 +12,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 class StackOverSpider(scrapy.Spider):
+    user_agent = 'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36'
     name = "stack"
     allowed_domains = ["stackoverflow.com"]
     start_urls = ['https://stackoverflow.com/questions?tab=Active']
@@ -29,29 +30,34 @@ class StackOverSpider(scrapy.Spider):
             item["title"] = response.css("h1 a::text").get()
             item["link"]  = response.url
             item["tags"]  = response.css("div.post-taglist a::text").getall()
-            item["total_answers"] = len(answers) 
+            item["total_answers"] = len(answers)
 
-            # stats = response.css("div.s-post-summary--stats-item")
+            stats = response.css("div.s-post-summary--stats")
 
-            demo_details = []
-            for stat in response.css("div.s-post-summary--stats-item"):
-                label = stat.css("div::attr(title)").get().lower()
-                value = stat.css("span.s-post-summary--stats-item-number::text").extract()
-                if "Score" in label:
-                    votes = value
-                elif "view" in label:
-                    views = value
-                elif "accepted" in label:
-                    has_accepted = True
+            item["views"] = stats.css("div.s-post-summary--stats-item:nth-child(3) span.s-post-summary--stats-item-number::text").get()
+            item["votes"] = stats.css("div.s-post-summary--stats-item:nth-child(1) span.s-post-summary--stats-item-number::text").get()
 
-                demo_det = {
-                    "votes": votes,
-                    "views": views,
-                    "is_accepted": has_accepted
-                }
-                demo_details.append(demo_det)
+            # item["views"] = stats.css(".s-post-summary--stats:nth-child(1) .s-post-summary--stats-item-number::text").get()
+            # item["votes"] = stats.css(".s-post-sumary--stats:nth-child(3) .s-post-summary--stats-item-number::text").get()
+
+            # demo_details = []
+
+            # for stat in response.css("div.s-post-summary--stats-item"):
+
+            #     label = stat.css("div::attr(title)").get().lower()
+            #     value = stat.css("span.s-post-summary--stats-item-number::text").get()
+            #     if "score" in label:
+            #         votes = value if votes else None
+            #     elif "view" in label:
+            #         views = value if views else None
+
+            #     demo_det = {
+            #         "votes": votes,
+            #         "views": views
+            #     }
+            #     demo_details.append(demo_det)
             
-            item["details"] = demo_details
+            # item["details"] = demo_details
 
             question_author = response.css("div.post-layout--right div.user-info")
             item["asked_by"] = {
@@ -68,7 +74,7 @@ class StackOverSpider(scrapy.Spider):
             for answer in response.css("div.answer"):
                 is_accepted = bool(answer.css("div.accepted-answer"))
 
-                answer_parts = answer.css("div.s-prose p::text, div.s-prose pre::text, div.s-prose code::text, div.s-prose a::text").getall()
+                answer_parts = answer.css("div.s-prose p::text, div.s-prose pre::text, div.s-prose code::text").getall()
                 answer_content = "\n".join([part.strip() for part in answer_parts if part.strip()])
 
                 user_info = answer.css("div.user-info")
